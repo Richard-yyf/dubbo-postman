@@ -28,6 +28,7 @@ import com.dubbo.postman.util.Constant;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisNode;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,33 +41,25 @@ import redis.clients.jedis.JedisPoolConfig;
 @Configuration
 public class RedisConfig {
 
-    @Value("${sentinel.master}")
-    String nodeMaster;
+    @Value("${redis.sentinel.master}")
+    private String nodeMaster;
 
     @Value("${redis.password}")
-    String nodePassword;
+    private String nodePassword;
 
-    @Value("${node1.ip}")
-    String node1Ip;
-
-    @Value("${node2.ip}")
-    String node2Ip;
-
-    @Value("${node3.ip}")
-    String node3Ip;
+    @Value("#{'${redis.sentinel.nodes}'.split(',')}")
+    private String[] sentinelNodes;
 
     @Bean
     public JedisConnectionFactory jedisConnectionFactory() {
 
-        String[] node1 = node1Ip.split(Constant.PORT_SPLITTER);
-        String[] node2 = node1Ip.split(Constant.PORT_SPLITTER);
-        String[] node3 = node1Ip.split(Constant.PORT_SPLITTER);
-
         RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
-                .master(nodeMaster)
-                .sentinel(node1[0], Integer.valueOf(node1[1]))
-                .sentinel(node2[0], Integer.valueOf(node2[1]))
-                .sentinel(node3[0], Integer.valueOf(node3[1]));
+                .master(nodeMaster);
+
+        for (String sentinelNode : sentinelNodes) {
+            String[] nodeInfo = sentinelNode.split(Constant.PORT_SPLITTER);
+            sentinelConfig.addSentinel(new RedisNode(nodeInfo[0], Integer.parseInt(nodeInfo[1])));
+        }
 
         JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(sentinelConfig);
 
