@@ -114,7 +114,7 @@ public class ZkConfigController {
 
             ZkServiceFactory.ZK_SET.remove(zk);
 
-            ZkServiceFactory.ZKSERVICE_MAP.remove(zk);
+            ZkServiceFactory.ZK_SERVICE_MAP.remove(zk);
 
             redisRepository.setRemove(RedisKeys.ZK_REDIS_KEY, zk);
 

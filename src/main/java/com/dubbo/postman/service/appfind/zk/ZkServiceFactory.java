@@ -40,18 +40,18 @@ public class ZkServiceFactory {
     /**
      * zk地址
      */
-    public static final Map<String,ZkService> ZKSERVICE_MAP = new ConcurrentHashMap<>();
+    public static final Map<String, ZkService> ZK_SERVICE_MAP = new ConcurrentHashMap<>();
     
     public static synchronized ZkService get(String zkAddr){
     
-        if(ZKSERVICE_MAP.containsKey(zkAddr)){
+        if(ZK_SERVICE_MAP.containsKey(zkAddr)){
             
-            return ZKSERVICE_MAP.get(zkAddr);
+            return ZK_SERVICE_MAP.get(zkAddr);
         }
         
         ZkService zkService = new ZkService(zkAddr);
 
-        ZKSERVICE_MAP.put(zkAddr,zkService);
+        ZK_SERVICE_MAP.put(zkAddr,zkService);
 
         return zkService;
     }

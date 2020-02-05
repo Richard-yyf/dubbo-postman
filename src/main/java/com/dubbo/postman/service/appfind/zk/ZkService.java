@@ -28,19 +28,15 @@ package com.dubbo.postman.service.appfind.zk;
 import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.dubbo.postman.service.appfind.entity.InterfaceMetaInfo;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.I0Itec.zkclient.IZkChildListener;
 import org.I0Itec.zkclient.ZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author everythingbest
@@ -48,216 +44,193 @@ import org.slf4j.LoggerFactory;
  * 处理一个zk集群下面dubbo节点的变更同步
  */
 public class ZkService {
-    
+
     private Logger logger = LoggerFactory.getLogger(ZkService.class);
 
     /**
      * serviceName ,serviceKey ,provider的其他属性信息
      */
-    public Map<String,Map<String, InterfaceMetaInfo>> allProviders = new ConcurrentHashMap();
+    public Map<String, Map<String, InterfaceMetaInfo>> allProviders = new ConcurrentHashMap();
 
     private ZkClient client;
-    
-    final static String dubboRoot = "/dubbo";
-    
-    Map<String,IZkChildListener> listeners = new HashMap<>();
-    
-    ZkService(String zkAddress){
-    
-        client = new ZkClient(zkAddress,5000);
-    
+
+    private final static String DUBBO_ROOT = "/dubbo";
+
+    private Map<String, IZkChildListener> listeners = new HashMap<>();
+
+    ZkService(String zkAddress) {
+
+        client = new ZkClient(zkAddress, 5000);
+
         //第一次获取所有的子节点
-        List<String> dubboNodes = client.getChildren(dubboRoot);
-    
+        List<String> dubboNodes = client.getChildren(DUBBO_ROOT);
+
         processDubboNodes(dubboNodes);
-        
+
         //处理新增或者删除的节点
-        IZkChildListener listener = new IZkChildListener(){
-        
-            @Override
-            public void handleChildChange(String parentPath, List<String> currentChilds) {
-            
-                if(currentChilds == null || currentChilds.isEmpty()){
-                    
-                    return;
-                }
-                
-                logger.debug("dubbo目录下变更节点数量:"+currentChilds.size());
-    
-                processDubboNodes(currentChilds);
+        IZkChildListener listener = (parentPath, currentChildren) -> {
+
+            if (currentChildren == null || currentChildren.isEmpty()) {
+
+                return;
             }
+
+            logger.debug("dubbo目录下变更节点数量:" + currentChildren.size());
+
+            processDubboNodes(currentChildren);
         };
-    
-        client.subscribeChildChanges(dubboRoot,listener);
+
+        client.subscribeChildChanges(DUBBO_ROOT, listener);
     }
 
     /**
-     *
      * @param dubboNodes 路径是:/dubbo节点下的所以子节点
      */
-    void processDubboNodes(List<String> dubboNodes){
-        
-        logger.info("provider的数量:"+dubboNodes.size());
-        
-        for(String child : dubboNodes){
-            
-            String providerName = child;
-            
-            String childPath = dubboRoot + "/"+child+"/providers";
-            
+    private void processDubboNodes(List<String> dubboNodes) {
+
+        logger.info("provider的数量:" + dubboNodes.size());
+
+        for (String providerName : dubboNodes) {
+
+            String childPath = DUBBO_ROOT + "/" + providerName + "/providers";
+
             //避免重复订阅
-            if(!listeners.containsKey(childPath)){
-    
+            if (!listeners.containsKey(childPath)) {
+
                 //添加变更监听
-                IZkChildListener listener = new IZkChildListener(){
-        
-                    @Override
-                    public void handleChildChange(String parentPath, List<String> currentChilds){
-            
-                        if(currentChilds == null || currentChilds.isEmpty()){
-                
-                            return;
-                        }
-            
-                        logger.debug("providers目录下变更节点数量:"+currentChilds.size());
-            
-                        processChildNodes(currentChilds);
+                IZkChildListener listener = (parentPath, currentChildren) -> {
+
+                    if (currentChildren == null || currentChildren.isEmpty()) {
+                        return;
                     }
+                    logger.debug("providers目录下变更节点数量:" + currentChildren.size());
+
+                    processChildNodes(currentChildren);
                 };
-    
-                listeners.put(childPath,listener);
+
+                listeners.put(childPath, listener);
             }
-            
+
             List<String> children1 = client.getChildren(childPath);
-            
+
             processChildNodes(children1);
-            
         }
-        
-        for(Map.Entry<String,IZkChildListener> entry : listeners.entrySet()){
-            
-            client.subscribeChildChanges(entry.getKey(),entry.getValue());
+
+        for (Map.Entry<String, IZkChildListener> entry : listeners.entrySet()) {
+            client.subscribeChildChanges(entry.getKey(), entry.getValue());
         }
     }
-    
-    void processChildNodes(List<String> children1) {
+
+    private void processChildNodes(List<String> children1) {
 
         //serviceName,serviceKey,provider的其他属性信息
-        Map<String,Map<String, InterfaceMetaInfo>> tmp = new HashMap<>();
-        
-        for(String child1 : children1){
-    
+        Map<String, Map<String, InterfaceMetaInfo>> tmp = new HashMap<>();
+
+        for (String child1 : children1) {
+
             try {
-                
-                child1 = URLDecoder.decode(child1,"utf-8");
-                
+
+                child1 = URLDecoder.decode(child1, "utf-8");
+
             } catch (UnsupportedEncodingException e) {
-                
-                logger.error("解析zk的dubbo注册失败:"+e);
+
+                logger.error("解析zk的dubbo注册失败:" + e);
             }
-    
+
             URL dubboUrl = URL.valueOf(child1);
-        
+
             String serviceName = dubboUrl.getParameter("application");
-        
+
             String host = dubboUrl.getHost();
-        
+
             int port = dubboUrl.getPort();
-        
+
             String addr = host + ":" + port;
-        
-            String version = dubboUrl.getParameter("version","");
-        
+
+            String version = dubboUrl.getParameter("version", "");
+
             String methods = dubboUrl.getParameter("methods");
-        
-            
-            String group = dubboUrl.getParameter(Constants.GROUP_KEY,"default");
-            
+
+            String group = dubboUrl.getParameter(Constants.GROUP_KEY, "default");
+
             String[] methodArray = methods.split(",");
-        
-            Set<String> methodSets = new HashSet<>();
-            
-            for(String mn : methodArray){
-            
-                methodSets.add(mn);
-            }
-    
-            String providerName = dubboUrl.getParameter("interface","");
-    
-            
-            if(providerName.isEmpty()){
-                
+
+            Set<String> methodSets = new HashSet<>(Arrays.asList(methodArray));
+
+            String providerName = dubboUrl.getParameter("interface", "");
+
+            if (providerName.isEmpty()) {
                 return;
             }
-    
+
             String serviceKey = "";
-            
-            if(version.isEmpty()){
-    
-                serviceKey = group+"/"+providerName.replace(".","/");
-    
-            }else{
-                
-                serviceKey = group+"/"+providerName.replace(".","/")+"/"+version.replace(".","/");
+
+            if (version.isEmpty()) {
+
+                serviceKey = group + "/" + providerName.replace(".", "/");
+
+            } else {
+
+                serviceKey = group + "/" + providerName.replace(".", "/") + "/" + version.replace(".", "/");
             }
-    
+
             InterfaceMetaInfo metaItem = new InterfaceMetaInfo();
-        
+
             metaItem.setInterfaceName(providerName);
-    
+
             metaItem.setGroup(group);
-            
+
             metaItem.setApplicationName(serviceName);
-        
+
             metaItem.setMethodNames(methodSets);
-        
+
             metaItem.setVersion(version);
-        
+
             metaItem.setServiceAddr(child1);
-        
+
             metaItem.getServerIps().add(addr);
-            
+
             //替换策略
-            if(tmp.containsKey(serviceName)){
-    
+            if (tmp.containsKey(serviceName)) {
+
                 Map<String, InterfaceMetaInfo> oldMap = tmp.get(serviceName);
-    
+
                 //添加
-                if(oldMap.containsKey(serviceKey)){
-        
+                if (oldMap.containsKey(serviceKey)) {
+
                     InterfaceMetaInfo providerItemOld = oldMap.get(serviceKey);
-        
+
                     providerItemOld.getServerIps().add(addr);
-        
-                }else{
-    
-                    oldMap.put(serviceKey,metaItem);
+
+                } else {
+
+                    oldMap.put(serviceKey, metaItem);
                 }
-                
-            }else{
-    
+
+            } else {
+
                 Map<String, InterfaceMetaInfo> oldMap = new HashMap<>();
-    
-                oldMap.put(serviceKey,metaItem);
-    
-                tmp.put(serviceName,oldMap);
+
+                oldMap.put(serviceKey, metaItem);
+
+                tmp.put(serviceName, oldMap);
             }
         }
-    
-        for(String serviceName : tmp.keySet()){
-        
-            if(allProviders.containsKey(serviceName)){
-            
+
+        for (String serviceName : tmp.keySet()) {
+
+            if (allProviders.containsKey(serviceName)) {
+
                 Map<String, InterfaceMetaInfo> oldMap = allProviders.get(serviceName);
-            
+
                 Map<String, InterfaceMetaInfo> newMap = tmp.get(serviceName);
-            
+
                 //这里相当于替换和部分增加
                 oldMap.putAll(newMap);
-            
-            }else{
-            
-                allProviders.put(serviceName,tmp.get(serviceName));
+
+            } else {
+
+                allProviders.put(serviceName, tmp.get(serviceName));
             }
         }
     }
