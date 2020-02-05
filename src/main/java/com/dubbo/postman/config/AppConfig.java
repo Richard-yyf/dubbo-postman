@@ -27,12 +27,15 @@ package com.dubbo.postman.config;
 import com.dubbo.postman.repository.RedisRepository;
 import com.dubbo.postman.service.dubboinvoke.TemplateBuilder;
 import com.dubbo.postman.service.maven.MavenProcessor;
-import com.dubbo.postman.util.RedisKeys;
 import com.dubbo.postman.util.Constant;
+import com.dubbo.postman.util.RedisKeys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 /**
  * @author everythingbest
@@ -74,5 +77,21 @@ public class AppConfig {
         initializer.loadCreatedService(redisRepository, RedisKeys.DUBBO_MODEL_KEY,templateBuilder);
 
         return initializer;
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurerAdapter() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("*")
+                        .allowedMethods("POST", "GET")
+                        // 响应的缓存持续时间的最大年龄，简单来说就是Cookie的有效期 单位为秒
+                        .maxAge(3600)
+                        // 用户是否可以处理发送cookie
+                        .allowCredentials(false);
+            }
+        };
     }
 }
