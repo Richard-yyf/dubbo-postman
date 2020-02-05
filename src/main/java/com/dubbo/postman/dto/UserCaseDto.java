@@ -25,11 +25,13 @@
 package com.dubbo.postman.dto;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author everythingbest
  * 用例详细信息
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class UserCaseDto extends AbstractCaseDto {
 

@@ -27,7 +27,6 @@ package com.dubbo.postman.controller;
 import com.dubbo.postman.dto.WebApiRspDto;
 import com.dubbo.postman.repository.RedisRepository;
 import com.dubbo.postman.service.appfind.zk.ZkServiceFactory;
-
 import com.dubbo.postman.util.RedisKeys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -46,96 +45,90 @@ import java.util.Set;
 @Controller
 @RequestMapping("/dubbo-postman/")
 public class ZkConfigController {
-    
+
     @Value("${dubbo.postman.env}")
     private String env;
-    
+
+    /**
+     * 可执行修改其他的值,设置这个主要是防止随意修改注册地址
+     */
+    @Value("${dubbo.postman.password}")
+    private String password;
+
     @Resource
     RedisRepository redisRepository;
 
     @RequestMapping(value = "configs", method = RequestMethod.GET)
     @ResponseBody
-    public WebApiRspDto configs(){
+    public WebApiRspDto configs() {
 
         Set<Object> sets = redisRepository.members(RedisKeys.ZK_REDIS_KEY);
 
         return WebApiRspDto.success(sets);
     }
 
-    /**
-     * 可执行修改其他的值,设置这个主要是防止随意修改注册地址
-     */
-    private final static String PASSWORD = "123456";
-
     @RequestMapping(value = "new/config", method = RequestMethod.GET)
     @ResponseBody
     public WebApiRspDto queryDubbo(@RequestParam(name = "zk") String zk,
-                                   @RequestParam(name = "password") String password){
+                                   @RequestParam(name = "password") String password) {
 
-
-        if(!password.equals(PASSWORD)){
-
+        if (!password.equals(this.password)) {
             return WebApiRspDto.error("密码错误");
         }
-        
-        if(zk.isEmpty()){
 
+        if (zk.isEmpty()) {
             return WebApiRspDto.error("zk不能为空");
         }
 
-        if(ZkServiceFactory.ZK_SET.contains(zk)){
-
+        if (ZkServiceFactory.ZK_SET.contains(zk)) {
             return WebApiRspDto.error("zk地址已经存在");
         }
-            
+
         ZkServiceFactory.ZK_SET.add(zk);
 
         try {
             ZkServiceFactory.get(zk);
-        }catch (Exception exp){
-            return WebApiRspDto.error("zk地址连接失败:"+exp.getMessage());
+        } catch (Exception exp) {
+            return WebApiRspDto.error("zk地址连接失败:" + exp.getMessage());
         }
 
-        redisRepository.setAdd(RedisKeys.ZK_REDIS_KEY,zk);
+        redisRepository.setAdd(RedisKeys.ZK_REDIS_KEY, zk);
 
         return WebApiRspDto.success("保存成功");
     }
-    
+
     @RequestMapping(value = "zk/del", method = RequestMethod.GET)
     @ResponseBody
     public WebApiRspDto del(@RequestParam(name = "zk") String zk,
-                            @RequestParam(name = "password") String password){
-        
-        if(password.equals(PASSWORD)){
-            
-            if(zk.isEmpty()){
-                
+                            @RequestParam(name = "password") String password) {
+
+        if (password.equals(this.password)) {
+
+            if (zk.isEmpty()) {
                 return WebApiRspDto.error("zk不能为空");
             }
-            
-            if(!ZkServiceFactory.ZK_SET.contains(zk)){
-                
+
+            if (!ZkServiceFactory.ZK_SET.contains(zk)) {
                 return WebApiRspDto.error("zk地址不存在");
             }
-            
+
             ZkServiceFactory.ZK_SET.remove(zk);
-            
+
             ZkServiceFactory.ZKSERVICE_MAP.remove(zk);
 
-            redisRepository.setRemove(RedisKeys.ZK_REDIS_KEY,zk);
+            redisRepository.setRemove(RedisKeys.ZK_REDIS_KEY, zk);
 
             return WebApiRspDto.success("删除成功");
-            
-        }else {
-            
+
+        } else {
             return WebApiRspDto.error("密码错误");
         }
     }
-    
+
     @RequestMapping(value = "env", method = RequestMethod.GET)
     @ResponseBody
-    public WebApiRspDto env(){
-        
+    public WebApiRspDto env() {
+
         return WebApiRspDto.success(env);
     }
 }
