@@ -26,7 +26,6 @@ package com.dubbo.postman.config;
 
 import com.dubbo.postman.repository.RedisRepository;
 import com.dubbo.postman.service.dubboinvoke.TemplateBuilder;
-import com.dubbo.postman.service.maven.MavenProcessor;
 import com.dubbo.postman.util.Constant;
 import com.dubbo.postman.util.RedisKeys;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +43,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @Configuration
 public class AppConfig {
 
-    @Value("${nexus.url}")
-    private String nexusPath;
-
     @Value("${dubbo.api.jar.dir}")
     String apiJarPath;
 
@@ -57,20 +53,12 @@ public class AppConfig {
     private TemplateBuilder templateBuilder;
 
     @Bean
-    MavenProcessor mavenProcessor(){
-
-        return new MavenProcessor(nexusPath,apiJarPath);
-    }
-
-    @Bean
     Initializer initializer() throws Exception {
 
         Initializer initializer = new Initializer();
 
         //统一设置路径入口,其他地方通过System.getProperty获取
         System.setProperty(Constant.USER_HOME, apiJarPath);
-
-        initializer.copySettingXml(apiJarPath);
 
         initializer.loadZkAddress(redisRepository);
 

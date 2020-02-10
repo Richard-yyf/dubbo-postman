@@ -26,14 +26,11 @@ package com.dubbo.postman.service.dubboinvoke;
 
 import com.dubbo.postman.domain.*;
 import com.dubbo.postman.repository.LocalStore;
-import com.dubbo.postman.util.LogResultPrintStream;
 import com.dubbo.postman.util.CommonUtil;
-import com.dubbo.postman.service.maven.MavenProcessor;
+import com.dubbo.postman.util.LogResultPrintStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
 
 /**
  * 根据dubbo model构建template
@@ -43,9 +40,6 @@ import javax.annotation.Resource;
 public class TemplateBuilder {
 
     private Logger logger = LoggerFactory.getLogger(TemplateBuilder.class);
-
-    @Resource
-    MavenProcessor mavenProcess;
 
     public void buildTemplateByDubboModel(DubboModel model){
 
@@ -160,8 +154,9 @@ public class TemplateBuilder {
 
         logger.info("如果系统是第一次构建服务则需要下载各种maven plugin,耗时比较长");
 
-        boolean prepare = mavenProcess.process(serviceDirName,groupId,artifactId,version,resultPrintStream);
-
-        return prepare;
+        return true;
+//        boolean prepare = mavenProcess.process(serviceDirName,groupId,artifactId,version,resultPrintStream);
+//
+//        return prepare;
     }
 }

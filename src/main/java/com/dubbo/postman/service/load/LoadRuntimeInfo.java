@@ -55,6 +55,12 @@ public class LoadRuntimeInfo {
     
     private static Logger logger = LoggerFactory.getLogger(LoadRuntimeInfo.class);
 
+    /**
+     * 能够支持同一服务不同jar的操作，因为双亲委派模型
+     * 比如服务A有1.0和1.1版本， key={#version}_{#serviceName}
+     * 两个版本都会有对应的ApiJarClassLoader去加载，这样子就不会有冲突了
+     * -- by Richard
+     */
     private static final Map<String, ApiJarClassLoader> loaderMap = new ConcurrentHashMap<>();
 
     public void load(DubboModel dubboModel){
@@ -79,6 +85,11 @@ public class LoadRuntimeInfo {
         File baseFile = new File(jarPath);
 
         List<URL> urlList = new ArrayList<>();
+
+        if (baseFile.listFiles() == null) {
+            doLoad(urlList,dubboModel);
+            return;
+        }
     
         for(File file : baseFile.listFiles()){
             
@@ -116,7 +127,6 @@ public class LoadRuntimeInfo {
         loaderMap.put(key,jarFileClassLoader);
 
         for(DubboInterfaceModel serviceModel : dubboModel.getServiceModelList()){
-            
             Set<String> methodNames = serviceModel.getMethodNames();
             
             try {

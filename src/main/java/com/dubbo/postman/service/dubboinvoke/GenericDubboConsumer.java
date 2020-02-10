@@ -28,8 +28,8 @@ import com.alibaba.dubbo.config.ApplicationConfig;
 import com.alibaba.dubbo.config.ReferenceConfig;
 import com.alibaba.dubbo.config.RegistryConfig;
 import com.alibaba.dubbo.rpc.service.GenericService;
-import com.dubbo.postman.dto.WebApiRspDto;
 import com.dubbo.postman.domain.RequestTemplate;
+import com.dubbo.postman.dto.WebApiRspDto;
 import com.dubbo.postman.util.Constant;
 import com.dubbo.postman.util.ExceptionHelper;
 import org.slf4j.Logger;
@@ -169,7 +169,7 @@ public class GenericDubboConsumer {
 
     ReferenceConfig<GenericService> createReference(RequestTemplate template){
 
-        ReferenceConfig<GenericService> newReference = new ReferenceConfig<GenericService>();
+        ReferenceConfig<GenericService> newReference = new ReferenceConfig<>();
 
         //设置默认超时无限制,用于在本地调试的时候用
         newReference.setTimeout(Integer.MAX_VALUE);

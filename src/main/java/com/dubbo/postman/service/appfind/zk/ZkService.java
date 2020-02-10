@@ -50,7 +50,7 @@ public class ZkService {
     /**
      * serviceName ,serviceKey ,provider的其他属性信息
      */
-    public Map<String, Map<String, InterfaceMetaInfo>> allProviders = new ConcurrentHashMap();
+    public Map<String, Map<String, InterfaceMetaInfo>> allProviders = new ConcurrentHashMap<>();
 
     private ZkClient client;
 
@@ -121,23 +121,23 @@ public class ZkService {
         }
     }
 
-    private void processChildNodes(List<String> children1) {
+    private void processChildNodes(List<String> children) {
 
         //serviceName,serviceKey,provider的其他属性信息
         Map<String, Map<String, InterfaceMetaInfo>> tmp = new HashMap<>();
 
-        for (String child1 : children1) {
+        for (String child : children) {
 
             try {
 
-                child1 = URLDecoder.decode(child1, "utf-8");
+                child = URLDecoder.decode(child, "utf-8");
 
             } catch (UnsupportedEncodingException e) {
 
                 logger.error("解析zk的dubbo注册失败:" + e);
             }
 
-            URL dubboUrl = URL.valueOf(child1);
+            URL dubboUrl = URL.valueOf(child);
 
             String serviceName = dubboUrl.getParameter("application");
 
@@ -163,7 +163,7 @@ public class ZkService {
                 return;
             }
 
-            String serviceKey = "";
+            String serviceKey;
 
             if (version.isEmpty()) {
 
@@ -186,7 +186,7 @@ public class ZkService {
 
             metaItem.setVersion(version);
 
-            metaItem.setServiceAddr(child1);
+            metaItem.setServiceAddr(child);
 
             metaItem.getServerIps().add(addr);
 
