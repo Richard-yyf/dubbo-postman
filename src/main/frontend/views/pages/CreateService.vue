@@ -68,7 +68,7 @@
                     <el-input
                         type="textarea"
                         :autosize="{ minRows: 7, maxRows: 7}"
-                        placeholder="推荐直接从nexus复制过来比较准确
+                        placeholder="
 <dependency>
   <groupId>com.xx.yy</groupId>
   <artifactId>cc-service-api</artifactId>
@@ -80,9 +80,6 @@
                 </el-col>
             </el-row>
             <el-form-item>
-                <a :href="'http://192.168.1.177:8081/nexus/#welcome'" target="_blank" class="el-button el-button--info">
-                    NEXUS地址
-                </a>
                 <el-button :loading="isCreating" type="success" v-on:click="doCreate">创建</el-button>
             </el-form-item>
 
@@ -101,8 +98,8 @@
 
 <script>
 
-    import { getZkServices,upload} from '@/api/create';
-    import { getAllZk} from '@/api/common';
+    import {getZkServices, upload} from '@/api/create';
+    import {getAllZk} from '@/api/common';
 
     export default {
         name:'createService',
