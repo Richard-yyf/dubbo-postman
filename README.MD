@@ -1,12 +1,17 @@
 DUBBO-POSTMAN
-==========
+
+经过改造简化之后的Dubbo-Postman版本
+- 去除了动态api jar 加载模块
+- 修复bug：当请求参数中使用父类接收子类信息的时候，json 反序列化会丢失子类信息，从而导致请求参数转化异常，请求失
+
+==============
 
 <img src="https://github.com/everythingbest/dubbo-postman/blob/master/gif/logo.png?raw=true" alt="dubbo postman logo" height="90px" align="right" />
 
 **DUBBO-POSTMAN**: 一个用于通过web-ui页面访问dubbo接口的工具,灵感源于
 [postman](https://www.getpostman.com/products)
 
-# 介绍
+# 原介绍
 **DUBBO-POSTMAN** 是一个通过web页面访问dubbo接口的开源工具,包括零代码创建一个dubbo consumer,保存访问用例,构建场景测试.
 核心功能如下.
 
@@ -44,8 +49,6 @@ npm run dev
 npm run build
 ```
 
-默认的ui地址是 `http://localhost:9528/`.
-后台服务地址是 `http://localhost:8080/`.
 
 DUBBO-POSTMAN BACKEND
 ===============
@@ -54,15 +57,6 @@ DUBBO-POSTMAN BACKEND
 
 ## 启动
 在项目根目录下执行 maven clean package ,然后在命令行执行 java -jar target/dubbo-postman.jar
-
-
-## application.properties
-项目的所有核心配置都在这个文件里面.
-
-在 `application.properties`有三个主要配置.
-1. **dubbo.api.jar.dir**: maven-embedder构建的目录.
-1. **nexus.url**: 私服仓库地址.
-1. **nodex.ip**: redis哨兵配置.
 
 使用演示
 ===============
@@ -84,17 +78,3 @@ dubbo demo创建
  <img align="center" alt="face" src="https://github.com/everythingbest/dubbo-postman/blob/master/gif/dubbo-postman-4.gif?raw=true" />
 </p>
 
-赞赏
-===============
-
-如果你觉得这个项目帮助到了你，你可以帮作者买一杯果汁表示鼓励 🍹
-<table>
-  <tr>
-      <td width="50%" align="center"><b>AliPay</b></td>
-      <td width="50%" align="center"><b>WechatPay</b></td>
-  </tr>
-  <tr>
-     <td><img src="https://github.com/everythingbest/dubbo-postman/blob/master/gif/alipay.JPG?raw=true"/></td>
-     <td><img src="https://github.com/everythingbest/dubbo-postman/blob/master/gif/wechatpay.JPG?raw=true"/></td>
-  </tr>
-</table>
