@@ -24,12 +24,13 @@
 
 package com.dubbo.postman.service.appcreate;
 
-import com.dubbo.postman.service.appfind.entity.InterfaceMetaInfo;
 import com.dubbo.postman.domain.DubboInterfaceModel;
 import com.dubbo.postman.domain.DubboModel;
+import com.dubbo.postman.service.appfind.entity.InterfaceMetaInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -64,7 +65,8 @@ public class DubboAppCreator {
                                             String a,
                                             String v,
                                             Map<String, InterfaceMetaInfo> providers){
-        
+
+        String serverVersion = v.replaceAll("-SNAPSHOT", "");
 
         DubboModel dubboModel = new DubboModel();
 
@@ -72,11 +74,14 @@ public class DubboAppCreator {
 
         for(Map.Entry<String, InterfaceMetaInfo> entry : providers.entrySet()){
 
+            String version = entry.getValue().getVersion();
+            if (!Objects.equals(version, serverVersion)) {
+                continue;
+            }
+
             DubboInterfaceModel dubboInterfaceModel = new DubboInterfaceModel();
 
             String providerName = entry.getValue().getInterfaceName();
-
-            String version = entry.getValue().getVersion();
 
             Set<String> serverIps = entry.getValue().getServerIps();
 

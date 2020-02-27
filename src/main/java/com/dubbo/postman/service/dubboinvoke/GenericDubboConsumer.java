@@ -30,6 +30,7 @@ import com.alibaba.dubbo.config.RegistryConfig;
 import com.alibaba.dubbo.rpc.service.GenericService;
 import com.dubbo.postman.domain.RequestTemplate;
 import com.dubbo.postman.dto.WebApiRspDto;
+import com.dubbo.postman.exception.ServiceLoadException;
 import com.dubbo.postman.util.Constant;
 import com.dubbo.postman.util.ExceptionHelper;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ import java.util.WeakHashMap;
 
 /**
  * 统一的消费dubbo的服务
+ *
  * @author everythingbest
  */
 @Service
@@ -51,23 +53,24 @@ public class GenericDubboConsumer {
 
     private ApplicationConfig application = new ApplicationConfig(Constant.APP_NAME);
 
-    private Map<String,ReferenceConfig<GenericService>> cachedReference = new WeakHashMap<>();
+    private Map<String, ReferenceConfig<GenericService>> cachedReference = new WeakHashMap<>();
 
     @Resource
     TemplateFetcher paramParser;
 
     /**
      * 处理所有请求
+     *
      * @param request
      */
     public WebApiRspDto send(Request request) {
 
-        if(request.getPath() == null){
+        if (request.getPath() == null) {
 
-            return WebApiRspDto.error("必须选择一个接口和方法进行访问",ResponseCode.SYSTEM_ERROR.code);
+            return WebApiRspDto.error("必须选择一个接口和方法进行访问", ResponseCode.SYSTEM_ERROR.code);
         }
 
-        logger.info("请求路径:"+request.getPath());
+        logger.info("请求路径:" + request.getPath());
 
         RequestTemplate template;
 
@@ -75,11 +78,15 @@ public class GenericDubboConsumer {
 
             template = paramParser.getTemplate(request);
 
-        }catch (Exception exp){
+        } catch (ServiceLoadException e) {
+
+            return WebApiRspDto.error(e.getServiceName() + " jar包加载异常，请检查测试项目是否添加对应依赖", ResponseCode.SYSTEM_ERROR.code);
+
+        } catch (Exception exp) {
 
             String expStr = ExceptionHelper.getExceptionStackString(exp);
 
-            return WebApiRspDto.error("解析参数错误:"+expStr,ResponseCode.SYSTEM_ERROR.code);
+            return WebApiRspDto.error("解析参数错误:" + expStr, ResponseCode.SYSTEM_ERROR.code);
         }
 
         try {
@@ -100,17 +107,17 @@ public class GenericDubboConsumer {
 
             long elapse = end - start;
 
-            logger.info("请求dubbo耗时:"+elapse);
+            logger.info("请求dubbo耗时:" + elapse);
 
-            return WebApiRspDto.success(obj,elapse);
+            return WebApiRspDto.success(obj, elapse);
 
-        }catch (Exception exp){
+        } catch (Exception exp) {
 
-            logger.warn("请求dubbo服务失败",exp);
+            logger.warn("请求dubbo服务失败", exp);
 
             String exceptionStr = ExceptionHelper.getExceptionStackString(exp);
 
-            return WebApiRspDto.error(exceptionStr,ResponseCode.APP_ERROR.code);
+            return WebApiRspDto.error(exceptionStr, ResponseCode.APP_ERROR.code);
         }
     }
 
@@ -122,27 +129,27 @@ public class GenericDubboConsumer {
 
         String interfaceName = template.getInterfaceName();
 
-        String referenceKey = serviceName + "-" + group +"-"+ interfaceName;
+        String referenceKey = serviceName + "-" + group + "-" + interfaceName;
 
         String cacheKey;
 
-        if(template.isUseDubbo()){
+        if (template.isUseDubbo()) {
 
-            cacheKey = template.getDubboUrl()+"-"+referenceKey;
+            cacheKey = template.getDubboUrl() + "-" + referenceKey;
 
-        }else{
+        } else {
 
-            cacheKey = template.getRegistry()+"-"+referenceKey;
+            cacheKey = template.getRegistry() + "-" + referenceKey;
         }
 
         ReferenceConfig<GenericService> reference = cachedReference.get(cacheKey);
 
-        if(reference != null ){
+        if (reference != null) {
 
             GenericService service = reference.get();
 
             //如果创建失败了,比如provider重启了,需要重新创建
-            if(service == null){
+            if (service == null) {
 
                 cachedReference.remove(cacheKey);
 
@@ -151,23 +158,23 @@ public class GenericDubboConsumer {
 
             return service;
 
-        }else{
+        } else {
 
             ReferenceConfig<GenericService> newReference = createReference(template);
 
             GenericService service = newReference.get();
 
             //如果创建成功了就添加，否则不添加
-            if(service != null){
+            if (service != null) {
 
-                cachedReference.put(cacheKey,newReference);
+                cachedReference.put(cacheKey, newReference);
             }
 
             return service;
         }
     }
 
-    ReferenceConfig<GenericService> createReference(RequestTemplate template){
+    ReferenceConfig<GenericService> createReference(RequestTemplate template) {
 
         ReferenceConfig<GenericService> newReference = new ReferenceConfig<>();
 
@@ -181,21 +188,21 @@ public class GenericDubboConsumer {
         String group = template.getGroup();
 
         //default是我加的,dubbo默认是没有的
-        if(group.isEmpty() || group.equals("default")){
+        if (group.isEmpty() || group.equals("default")) {
 
-        }else{
+        } else {
 
             newReference.setGroup(group);
         }
 
-        if(template.isUseDubbo()){
+        if (template.isUseDubbo()) {
 
             //直连
             newReference.setUrl(template.getDubboUrl());
 
-            logger.info("直连dubbo地址:"+template.getDubboUrl());
+            logger.info("直连dubbo地址:" + template.getDubboUrl());
 
-        }else{
+        } else {
 
             //通过zk访问
             newReference.setRegistry(new RegistryConfig(template.getRegistry()));

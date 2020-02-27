@@ -28,6 +28,7 @@ import com.dubbo.postman.domain.DubboInterfaceModel;
 import com.dubbo.postman.domain.DubboMethodModel;
 import com.dubbo.postman.domain.DubboModel;
 import com.dubbo.postman.domain.DubboParamModel;
+import com.dubbo.postman.exception.ServiceLoadException;
 import com.dubbo.postman.util.Constant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +64,7 @@ public class LoadRuntimeInfo {
      */
     private static final Map<String, ApiJarClassLoader> loaderMap = new ConcurrentHashMap<>();
 
-    public void load(DubboModel dubboModel){
+    public void load(DubboModel dubboModel) throws ServiceLoadException {
 
         String apiJarPath = System.getProperty(Constant.USER_HOME);
 
@@ -75,30 +76,15 @@ public class LoadRuntimeInfo {
 
         File dir = new File(apiJarPath + File.separator +versionDirName+"_"+ serviceName);
 
-        load(dir.getAbsolutePath()+File.separator+"lib",dubboModel);
+        load(dir.getAbsolutePath()+File.separator+"lib", dubboModel);
 
         dubboModel.setLoadedToClassLoader(true);
     }
 
-    void load(String jarPath, DubboModel dubboModel){
+    void load(String jarPath, DubboModel dubboModel) throws ServiceLoadException {
         
-        File baseFile = new File(jarPath);
+        doLoad(new ArrayList<>(),dubboModel);
 
-        List<URL> urlList = new ArrayList<>();
-
-        if (baseFile.listFiles() == null) {
-            doLoad(urlList,dubboModel);
-            return;
-        }
-    
-        for(File file : baseFile.listFiles()){
-            
-            URL url =  getFileUrls(file);
-    
-            urlList.add(url);
-        }
-        
-        doLoad(urlList,dubboModel);
     }
 
     public ApiJarClassLoader getClassLoader(DubboModel dubboModel){
@@ -118,7 +104,7 @@ public class LoadRuntimeInfo {
      * @param urlList
      * @param dubboModel
      */
-    void doLoad(List<URL> urlList,DubboModel dubboModel){
+    void doLoad(List<URL> urlList,DubboModel dubboModel) throws ServiceLoadException {
 
         ApiJarClassLoader jarFileClassLoader = new ApiJarClassLoader(urlList.toArray(new URL[]{}));
 
@@ -190,10 +176,9 @@ public class LoadRuntimeInfo {
 
                 //设置运行时信息
                 serviceModel.setInterfaceClass(clazz);
-                
             } catch (Throwable e) {
-                
                 logger.warn(serviceModel.getInterfaceName()+"加载到内存失败:"+e);
+                throw new ServiceLoadException(e, serviceModel.getInterfaceName());
             }
         }
     }

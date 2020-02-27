@@ -24,15 +24,16 @@
 
 package com.dubbo.postman.service.dubboinvoke;
 
+import com.dubbo.postman.domain.DubboModel;
 import com.dubbo.postman.domain.RequestParam;
+import com.dubbo.postman.domain.RequestTemplate;
+import com.dubbo.postman.exception.ServiceLoadException;
 import com.dubbo.postman.repository.LocalStore;
 import com.dubbo.postman.service.load.LoadRuntimeInfo;
-import com.dubbo.postman.domain.RequestTemplate;
-import com.dubbo.postman.domain.DubboModel;
+import com.dubbo.postman.util.CommonUtil;
 import com.dubbo.postman.util.Constant;
 import com.dubbo.postman.util.IpUtil;
 import com.dubbo.postman.util.JSON;
-import com.dubbo.postman.util.CommonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,7 @@ public class TemplateFetcher {
     @Resource
     TemplateBuilder templateBuilder;
 
-    public RequestTemplate getTemplate(Request request) throws ParamException {
+    public RequestTemplate getTemplate(Request request) throws ParamException, ServiceLoadException {
 
         String requestPath = request.getPath();
 
@@ -120,7 +121,11 @@ public class TemplateFetcher {
                 Thread.currentThread().setContextClassLoader(targetType.getClassLoader());
 
                 try {
-                    paramValue = JSON.mapper.convertValue(value, targetType);
+                    if (targetType.isPrimitive() || targetType == String.class) {
+                        paramValue = JSON.mapper.convertValue(value, targetType);
+                    } else {
+                        paramValue = JSON.mapper.convertValue(value, Map.class);
+                    }
                 }catch (Exception exp){
                     logger.error("参数反序列化失败:"+exp.getMessage());
                 }

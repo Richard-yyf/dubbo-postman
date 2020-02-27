@@ -24,18 +24,15 @@
 
 package com.dubbo.postman.controller;
 
+import com.dubbo.postman.domain.DubboModel;
 import com.dubbo.postman.dto.WebApiRspDto;
-import com.dubbo.postman.service.load.LoadRuntimeInfo;
+import com.dubbo.postman.exception.ServiceLoadException;
 import com.dubbo.postman.repository.RedisRepository;
 import com.dubbo.postman.service.appcreate.DubboAppCreator;
-import com.dubbo.postman.service.appfind.zk.ZkServiceFactory;
 import com.dubbo.postman.service.appfind.entity.InterfaceMetaInfo;
-
-import java.io.ByteArrayOutputStream;
-import java.util.Map;
-
+import com.dubbo.postman.service.appfind.zk.ZkServiceFactory;
 import com.dubbo.postman.service.dubboinvoke.TemplateBuilder;
-import com.dubbo.postman.domain.DubboModel;
+import com.dubbo.postman.service.load.LoadRuntimeInfo;
 import com.dubbo.postman.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +44,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
+import java.io.ByteArrayOutputStream;
+import java.util.Map;
 
 /**
  * 提供服务的创建及刷新的功能
@@ -123,16 +122,20 @@ public class AppCreateController {
 
             Map<String, InterfaceMetaInfo> interfaceMetaInfoMap = ZkServiceFactory.get(zk).allProviders.get(serviceName);
 
-            if(logger.isDebugEnabled()){
+//            if(logger.isDebugEnabled()){
 
-                logger.debug("应用名称:"+serviceName+"\n从ZK拉取的提供者:{} \n编译日志:\n {}", JSON.objectToString(interfaceMetaInfoMap),errorContent);
-            }
+            logger.info("应用名称:"+serviceName+"\n从ZK拉取的提供者:{} \n编译日志:\n {}", JSON.objectToString(interfaceMetaInfoMap),errorContent);
+//            }
 
             DubboModel dubboModel = dubboAppCreator.create(zk,serviceName,g,a,v,interfaceMetaInfoMap);
 
             buildRequestDubboTemplate(dubboModel);
 
-        }catch (Exception exp){
+        } catch (ServiceLoadException e) {
+
+            return WebApiRspDto.error(e.getServiceName() + " jar包加载异常，请检查测试项目是否添加对应依赖");
+
+        } catch (Exception exp){
             
             return WebApiRspDto.error(errorContent+"\n"+exp.getMessage());
         }
@@ -187,10 +190,10 @@ public class AppCreateController {
 
             Map<String, InterfaceMetaInfo> interfaceMetaInfoMap = ZkServiceFactory.get(zk).allProviders.get(serviceName);
 
-            if(logger.isDebugEnabled()){
+//            if(logger.isDebugEnabled()){
 
-                logger.debug("应用名称:"+serviceName+"\n从ZK拉取的提供者:{} \n编译日志:\n {}",JSON.objectToString(interfaceMetaInfoMap),errorContent);
-            }
+            logger.info("应用名称:"+serviceName+"\n从ZK拉取的提供者:{} \n编译日志:\n {}",JSON.objectToString(interfaceMetaInfoMap),errorContent);
+//            }
 
             dubboModel = dubboAppCreator.create(zk,serviceName,g,a,v,interfaceMetaInfoMap);
 
@@ -204,7 +207,7 @@ public class AppCreateController {
         return WebApiRspDto.success(errorContent);
     }
 
-    private void buildRequestDubboTemplate(DubboModel model){
+    private void buildRequestDubboTemplate(DubboModel model) throws ServiceLoadException {
 
         loadJarClassService.load(model);
 
